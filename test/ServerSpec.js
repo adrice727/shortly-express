@@ -20,6 +20,8 @@ var xbeforeEach = function(){};
 
 describe('', function() {
 
+  this.timeout(10000);
+
   beforeEach(function() {
     // log out currently signed in user
     request('http://127.0.0.1:4568/logout', function(error, res, body) {});
@@ -64,7 +66,7 @@ describe('', function() {
 
     var requestWithSession = request.defaults({jar: true});
 
-    xbeforeEach(function(done){
+    beforeEach(function(done){
       // create a user that we can then log-in with
       new User({
           'username': 'Phillip',
@@ -213,7 +215,7 @@ describe('', function() {
 
   }); // 'Link creation'
 
-  xdescribe('Priviledged Access:', function(){
+  describe('Priviledged Access:', function(){
 
     it('Redirects to login page if a user tries to access the main page and is not signed in', function(done) {
       request('http://127.0.0.1:4568/', function(error, res, body) {
@@ -238,7 +240,7 @@ describe('', function() {
 
   }); // 'Priviledged Access'
 
-  xdescribe('Account Creation:', function(){
+  describe('Account Creation:', function(){
 
     it('Signup creates a user record', function(done) {
       var options = {
@@ -286,7 +288,7 @@ describe('', function() {
 
   }); // 'Account Creation'
 
-  xdescribe('Account Login:', function(){
+  describe('Account Login:', function(){
 
     var requestWithSession = request.defaults({jar: true});
 
@@ -297,7 +299,7 @@ describe('', function() {
       }).save().then(function(){
         done()
       });
-    })
+    });
 
     it('Logs in existing users', function(done) {
       var options = {

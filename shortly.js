@@ -10,6 +10,7 @@ var Links = require('./app/collections/links');
 var Link = require('./app/models/link');
 var Click = require('./app/models/click');
 var bcrypt = require('bcrypt-nodejs');
+var currentSession;
 
 var app = express();
 
@@ -37,7 +38,11 @@ app.get('/', restrict, function(req, res) {
 });
 
 app.get('/login', function(req, res) {
-  res.render('login');
+  if ( req.session.user ) {
+    res.redirect('/');
+  } else {
+    res.render('login');
+  }
 });
 
 app.get('/signup', function(req, res) {
@@ -118,6 +123,39 @@ app.post('/signup', function(req, res) {
   });
 });
 
+app.post('/login', function(req, res){
+  var username = req.body.username;
+  var password = req.body.password;
+  new User({
+    username: username
+  }).fetch().then(function(user){
+    if (user) {
+      console.log(user);
+      if (user.attributes.password ===  bcrypt.hashSync(password, user.attributes.salt)) {
+        req.session.regenerate(function(){
+          req.session.user = user;
+          res.redirect('/');
+        });
+      } else {
+        res.redirect('/login');
+      }
+    } else {
+      res.redirect('/login');
+    }
+  });
+});
+
+// $('.logout').on('click', function(e) {
+//   e.preventDefault();
+//   req.session.destroy(function(){
+//     res.redirect('/login');
+//   });
+// });
+
+app.get('/logout', function (req, res) {
+  delete req.session.user;
+  res.redirect('/login');
+});
 
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
@@ -127,6 +165,7 @@ app.post('/signup', function(req, res) {
 
 app.get('/*', function(req, res) {
   new Link({ code: req.params[0] }).fetch().then(function(link) {
+    console.log('link', link);
     if (!link) {
       res.redirect('/');
     } else {
@@ -153,23 +192,5 @@ console.log('Shortly is listening on 4568');
 app.listen(4568);
 
 
-
-// var testUser = new User({
-//   username: 'omkar',
-//   password: 'bananas',
-//   hash: ''
-// });
-
-// testUser.save();
-
-
-// var testUser = new User({
-//   username: 'aaron',
-//   password: 'apples'
-// });
-
-// testUser.save().then(function(model){
-//   console.log("User saved: ", model);
-// });
 
 
