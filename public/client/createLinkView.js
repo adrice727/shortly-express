@@ -1,4 +1,4 @@
-Shortly.createLinkView = Backbone.View.extend({
+ v  b =Shortly.createLinkView = Backbone.View.extend({
   className: 'creator',
 
   template: Templates['create'],

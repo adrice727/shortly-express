@@ -1,6 +1,7 @@
 var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
+var session = require('express-session');
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -8,6 +9,7 @@ var User = require('./app/models/user');
 var Links = require('./app/collections/links');
 var Link = require('./app/models/link');
 var Click = require('./app/models/click');
+var bcrypt = require('bcrypt-nodejs');
 
 var app = express();
 
@@ -17,21 +19,41 @@ app.configure(function() {
   app.use(partials());
   app.use(express.bodyParser())
   app.use(express.static(__dirname + '/public'));
+  app.use(express.cookieParser());
+  app.use(express.session({secret: 'curious_george', cookie: {maxAge: 3600000}}));
 });
 
-app.get('/', function(req, res) {
+var restrict = function(req, res, next) {
+  if (req.session.user) {
+    next();
+  } else {
+    req.session.error = 'Access denied!';
+    res.redirect('/login');
+  }
+};
+
+app.get('/', restrict, function(req, res) {
   res.render('index');
 });
 
-app.get('/create', function(req, res) {
+app.get('/login', function(req, res) {
+  res.render('login');
+});
+
+app.get('/signup', function(req, res) {
+  res.render('signup');
+});
+
+app.get('/create', restrict, function(req, res) {
   res.render('index');
 });
 
-app.get('/links', function(req, res) {
+app.get('/links', restrict, function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
-  })
+  });
 });
+
 
 app.post('/links', function(req, res) {
   var uri = req.body.url;
@@ -70,6 +92,31 @@ app.post('/links', function(req, res) {
 // Write your authentication routes here
 /************************************************************/
 
+app.post('/signup', function(req, res) {
+  var username = req.body.username;
+  var password = req.body.password;
+  new User({
+    username: username
+  }).fetch().then(function(found){
+    if (found) {
+      res.redirect('/login');
+    } else {
+      var salt = bcrypt.genSaltSync(10);
+      var hash = bcrypt.hashSync(password, salt);
+      var user = new User({
+        username: username,
+        password: hash,
+        salt: salt
+      });
+      user.save().then(function() {
+        req.session.regenerate(function(){
+          req.session.user = user;
+          res.redirect('/');
+        });
+      });
+    }
+  });
+});
 
 
 /************************************************************/
@@ -100,5 +147,29 @@ app.get('/*', function(req, res) {
   });
 });
 
+
+
 console.log('Shortly is listening on 4568');
 app.listen(4568);
+
+
+
+// var testUser = new User({
+//   username: 'omkar',
+//   password: 'bananas',
+//   hash: ''
+// });
+
+// testUser.save();
+
+
+// var testUser = new User({
+//   username: 'aaron',
+//   password: 'apples'
+// });
+
+// testUser.save().then(function(model){
+//   console.log("User saved: ", model);
+// });
+
+
